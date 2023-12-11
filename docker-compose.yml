@@ -1,3 +1,5 @@
+version: '3'
+
 services:
   web-app:
     build:
@@ -20,6 +22,8 @@ services:
 
   database:
     image: postgres:16.1-alpine3.19
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     environment:
       - POSTGRES_DB=dbname
       - POSTGRES_USER=dbuser
@@ -41,3 +45,28 @@ services:
       - redis
     depends_on:
       - redis
+      - database
+    environment:
+      - DB_HOST=database
+      - DB_NAME=dbname
+      - DB_USER=dbuser
+      - DB_PASS=pass
+
+  flower:
+    build:
+      context: .
+    hostname: flower
+    entrypoint: celery
+    command: -A celery_app.app flower
+    volumes:
+      - ./service:/service
+    links:
+      - redis
+    depends_on:
+      - redis
+
+    ports:
+      - "5555:5555"
+
+volumes:
+  postgres_data:
